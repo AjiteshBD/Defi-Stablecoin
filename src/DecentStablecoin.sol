@@ -33,11 +33,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * Collateral : Exogenous(ETH & BTC)
  * Minting: Algorithmic
  * Relative Stability: Pegged to USD
- * 
- * @notice This is contract meant to be governed by DSCEngine. This contract is just ERC20 
- implementation of our stablecoin system.
+ *
+ * @notice This is contract meant to be governed by DSCEngine. This contract is just ERC20
+ *  implementation of our stablecoin system.
  */
-
 contract DecentStableCoin is ERC20Burnable, Ownable {
     error DecentStableCoin__MustBeMoreThanZero();
     error DecentStableCoin__BurnAmountExceedsBalance();
@@ -56,10 +55,7 @@ contract DecentStableCoin is ERC20Burnable, Ownable {
         super.burn(_amount);
     }
 
-    function mint(
-        address _to,
-        uint256 _amount
-    ) external onlyOwner returns (bool) {
+    function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
         if (_to == address(0)) {
             revert DecentStableCoin__AddressZero();
         }
