@@ -53,9 +53,10 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
     error DSCEngine__ZeroAmount();
     error DSCEngine__TokensAndPriceFeedsLengthMismatch();
     error DSCEngine__TokenNotAllowed();
-    error DSCEngine__TraferFailed();
+    error DSCEngine__TransferFailed();
     error DSCEngine__BreaksHealthFactor(uint256 userHeathFactor);
     error DSCEngine__MintFailed();
+    error DSCEngine__BurnFailed();
 
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -76,6 +77,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
     event DepositCollateral(address indexed user, address indexed token, uint256 indexed amount);
+    event CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
@@ -113,7 +115,20 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function depositCollateralAndMintDSC(address _collateral, uint256 _amount) external override {}
+
+    /**
+     * @param _collateral The address of the collateral token to deposit
+     * @param _amountCollateral The amount of collateral to deposit
+     * @param _amountDSC The amount of DSC to mint
+     * @notice This function deposits collateral and mint DSC in one transaction.
+     */
+    function depositCollateralAndMintDSC(address _collateral, uint256 _amountCollateral, uint256 _amountDSC)
+        external
+        override
+    {
+        depositCollateral(_collateral, _amountCollateral);
+        mintDSC(_amountDSC);
+    }
 
     /**
      * @notice follows CEI (Checks,Effects,Interactions) pattern
@@ -121,7 +136,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
      * @param _amount The amount of collateral to deposit
      */
     function depositCollateral(address _collateral, uint256 _amount)
-        external
+        public
         override
         moreThanZero(_amount)
         isTokenAllowed(_collateral)
@@ -131,22 +146,58 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         emit DepositCollateral(msg.sender, _collateral, _amount);
         bool success = IERC20(_collateral).transferFrom(msg.sender, address(this), _amount);
         if (!success) {
-            revert DSCEngine__TraferFailed();
+            revert DSCEngine__TransferFailed();
         }
     }
 
-    function redeemCollateralAndBurnDSC() external override {}
+    /**
+     *
+     * @param _collateral token collateral address to redeem
+     * @param _amountCollateral  amount of collateral to redeem
+     * @param _amountDSC amount DSC to burn
+     * @notice This function redeems collateral and burn DSC in one transaction.
+     */
+    function redeemCollateralAndBurnDSC(address _collateral, uint256 _amountCollateral, uint256 _amountDSC)
+        external
+        override
+    {
+        burnDSC(_amountDSC);
+        redeemCollateral(_collateral, _amountCollateral);
+    }
 
-    function redeemCollateral() external override {}
+    function redeemCollateral(address _collateral, uint256 _amount)
+        public
+        override
+        moreThanZero(_amount)
+        isTokenAllowed(_collateral)
+        nonReentrant
+    {
+        s_collateralDeposited[msg.sender][_collateral] -= _amount;
+        emit CollateralRedeemed(msg.sender, _collateral, _amount);
+        bool success = IERC20(_collateral).transfer(msg.sender, _amount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
-    function burnDSC() external override {}
+    function burnDSC(uint256 _amountDSC) public override moreThanZero(_amountDSC) nonReentrant {
+        s_dscMinted[msg.sender] -= _amountDSC;
+
+        bool success = s_dscToken.transferFrom(msg.sender, address(this), _amountDSC);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        s_dscToken.burn(_amountDSC);
+        _revertIfHealthFactorIsBroken(msg.sender); // probably never this will happen. note to remove in future
+    }
 
     /**
      * @notice follows CEI (Checks,Effects,Interactions) pattern
      * @param _amountDSC The amount of DSC to mint
      * @notice they must have more collateral value than minimum threshold
      */
-    function mintDSC(uint256 _amountDSC) external override moreThanZero(_amountDSC) nonReentrant {
+    function mintDSC(uint256 _amountDSC) public override moreThanZero(_amountDSC) nonReentrant {
         s_dscMinted[msg.sender] += _amountDSC;
         // If they minted too much revert
         _revertIfHealthFactorIsBroken(msg.sender);

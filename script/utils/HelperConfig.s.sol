@@ -42,7 +42,7 @@ contract HelperConfig is Script, CodeConstant {
             wbtcAddress: 0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43,
             wethUSDPriceFeedAddress: 0xdd13E55209Fd76AfE204dBda4007C227904f0a81,
             wbtcUSDPriceFeedAddress: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063,
-            account: 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2 // Sepolia account
+            account: 0xbF76C07497A795E948D0EA362BEC83Be6AbCf1EF // Sepolia account
         });
     }
 
@@ -63,7 +63,7 @@ contract HelperConfig is Script, CodeConstant {
             wbtcAddress: address(wbtc),
             wethUSDPriceFeedAddress: address(ethUSDPriceFeed),
             wbtcUSDPriceFeedAddress: address(wbtcUSDPriceFeed),
-            account: msg.sender
+            account: 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
         });
     }
 }
