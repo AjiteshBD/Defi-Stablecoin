@@ -341,4 +341,12 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         // then divide by precision to get USD value
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * _amount) / PRECISION;
     }
+
+    function getAccountInformation(address user)
+        external
+        view
+        returns (uint256 totalDSCMinted, uint256 collateralValueInUSD)
+    {
+        (totalDSCMinted, collateralValueInUSD) = _getAccountInformation(user);
+    }
 }
