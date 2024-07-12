@@ -14,7 +14,7 @@ interface IDSCEngine {
 
     function mintDSC(uint256 _amountDSC) external;
 
-    function liquidate() external;
+    function liquidate(address _collateral, address _user, uint256 _debtToCover) external;
 
     function getHealthFactor() external view;
 }
