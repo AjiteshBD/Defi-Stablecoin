@@ -102,4 +102,73 @@ contract DSCEngineTest is Test {
         assertEq(expectedCollateral, INITIAL_COLLATERAL);
         assertEq(expectedDSCMinted, totalDSCMinted);
     }
+    /*//////////////////////////////////////////////////////////////
+                        MINT DSC TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function testMintDSCRevertZeroAmount() public {
+        vm.prank(USER);
+        vm.expectRevert(DSCEngine.DSCEngine__ZeroAmount.selector);
+        engine.mintDSC(0);
+    }
+
+    // function testMintDSCRevertHealthFactor() public {
+    //     vm.startPrank(USER);
+    //     ERC20Mock(weth).approve(address(engine), INITIAL_COLLATERAL);
+    //     engine.depositCollateral(address(weth), INITIAL_COLLATERAL);
+    //     vm.expectRevert(DSCEngine.DSCEngine__BreaksHealthFactor.selector);
+    //     engine.mintDSC(1 ether);
+    //     vm.stopPrank();
+    // }
+
+    /*//////////////////////////////////////////////////////////////
+                        REDEEM COLLATERAL TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function testRedeemCollateralRevertZeroAmount() public {
+        vm.prank(USER);
+        ERC20Mock(weth).approve(address(engine), INITIAL_WETH);
+        vm.expectRevert(DSCEngine.DSCEngine__ZeroAmount.selector);
+        engine.redeemCollateral(address(weth), 0);
+    }
+
+    // function testRedeemCollateral() public {
+    //     vm.startPrank(USER);
+    //     ERC20Mock(weth).approve(address(engine), INITIAL_COLLATERAL);
+    //     engine.depositCollateral(address(weth), INITIAL_COLLATERAL);
+    //     engine.redeemCollateral(address(weth), INITIAL_COLLATERAL);
+    //     (uint256 totalDSCMinted, uint256 collateralValueInUSD) = engine.getAccountInformation(USER);
+    //     assertEq(totalDSCMinted, 0);
+    //     assertEq(collateralValueInUSD, 0);
+    //     vm.stopPrank();
+    // }
+
+    /*//////////////////////////////////////////////////////////////
+                        BURN DSC TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function testBurnDSCRevertZeroAmount() public {
+        vm.prank(USER);
+        vm.expectRevert(DSCEngine.DSCEngine__ZeroAmount.selector);
+        engine.burnDSC(0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        LIQUIDATE TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function testLiquidateRevertZeroAmount() public {
+        vm.prank(USER);
+        vm.expectRevert(DSCEngine.DSCEngine__ZeroAmount.selector);
+        engine.liquidate(address(weth), USER, 0);
+    }
+
+    // function testLiquidateRevertHealthFactor() public {
+    //     vm.startPrank(USER);
+    //     ERC20Mock(weth).approve(address(engine), INITIAL_WETH);
+    //     engine.depositCollateralAndMintDSC(address(weth), INITIAL_WETH, 1 ether);
+    //     vm.expectRevert(DSCEngine.DSCEngine__UserHealthFactorIsNotBroken.selector);
+    //     engine.liquidate(address(weth), USER, INITIAL_COLLATERAL);
+    //     vm.stopPrank();
+    // }
 }

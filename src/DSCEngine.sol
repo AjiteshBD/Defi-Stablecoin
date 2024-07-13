@@ -288,6 +288,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         //total DSC Minted
         // total collateral deposited
         (uint256 _totalDSCMinted, uint256 _collateralValueInUSD) = _getAccountInformation(user);
+        if (_totalDSCMinted == 0) return type(uint256).max;
         //calculated collateral value liquidate threshold mean we need to overcollateralized
         // ex: 1000 ETH  * 50 = 50,000 /100 = 500
         uint256 collateralAdjustedForThreshold = (_collateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
