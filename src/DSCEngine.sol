@@ -72,7 +72,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
     mapping(address token => address priceFeed) private s_priceFeeds;
     mapping(address user => mapping(address token => uint256)) private s_collateralDeposited;
     mapping(address user => uint256 dscminted) private s_dscMinted;
-    address[] private s_tokenAddresses;
+    address[] private s_tokenAddresses; // token collateral addresses
     DecentStableCoin private s_dscToken;
 
     /*//////////////////////////////////////////////////////////////
@@ -239,8 +239,6 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function getHealthFactor() external view override {}
-
     /*//////////////////////////////////////////////////////////////
                     PRIVATE & INTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -288,15 +286,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         //total DSC Minted
         // total collateral deposited
         (uint256 _totalDSCMinted, uint256 _collateralValueInUSD) = _getAccountInformation(user);
-        if (_totalDSCMinted == 0) return type(uint256).max;
-        //calculated collateral value liquidate threshold mean we need to overcollateralized
-        // ex: 1000 ETH  * 50 = 50,000 /100 = 500
-        uint256 collateralAdjustedForThreshold = (_collateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
-        // adjusted collateral value with 18 decimals for division with DSC token to get health factor
-        //ex: $150 ETH / 100 DSC  = 1.5
-        //150 *50  = 7500 /100 = (75/100)<1 -- undercollateralized
-        //ex: 50,000/100 = (500/100) >1  -- overcollateralized
-        return (collateralAdjustedForThreshold * PRECISION) / _totalDSCMinted;
+        return _calculateHealthFactor(_totalDSCMinted, _collateralValueInUSD);
     }
 
     /**
@@ -309,6 +299,22 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         if (_userHealthFactor > MINIMUM_HEALTH_FACTOR) {
             revert DSCEngine__BreaksHealthFactor(_userHealthFactor);
         }
+    }
+
+    function _calculateHealthFactor(uint256 _totalDSCMinted, uint256 _collateralValueInUSD)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (_totalDSCMinted == 0) return type(uint256).max;
+        //calculated collateral value liquidate threshold mean we need to overcollateralized
+        // ex: 1000 ETH  * 50 = 50,000 /100 = 500
+        uint256 collateralAdjustedForThreshold = (_collateralValueInUSD * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        // adjusted collateral value with 18 decimals for division with DSC token to get health factor
+        //ex: $150 ETH / 100 DSC  = 1.5
+        //150 *50  = 7500 /100 = (75/100)<1 -- undercollateralized
+        //ex: 50,000/100 = (500/100) >1  -- overcollateralized
+        return (collateralAdjustedForThreshold * PRECISION) / _totalDSCMinted;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -349,5 +355,61 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         returns (uint256 totalDSCMinted, uint256 collateralValueInUSD)
     {
         (totalDSCMinted, collateralValueInUSD) = _getAccountInformation(user);
+    }
+
+    function getHealthFactor(address _user) external view override {
+        _healthFactor(_user);
+    }
+
+    function calculateHealthFactor(uint256 _totalDSCMinted, uint256 _collateralValueInUSD)
+        external
+        pure
+        returns (uint256)
+    {
+        return _calculateHealthFactor(_totalDSCMinted, _collateralValueInUSD);
+    }
+
+    function getCollateralBalanceUser(address _token, address _user) external view returns (uint256) {
+        return s_collateralDeposited[_user][_token];
+    }
+
+    function getDSCMinted(address _user) external view returns (uint256) {
+        return s_dscMinted[_user];
+    }
+
+    function getPrecision() external pure returns (uint256) {
+        return PRECISION;
+    }
+
+    function getAdditionalFeedPrecision() external pure returns (uint256) {
+        return ADDITIONAL_FEED_PRECISION;
+    }
+
+    function getLiquidatorBonus() external pure returns (uint256) {
+        return LIQUIDATOR_BONUS;
+    }
+
+    function getLiquidationThreshold() external pure returns (uint256) {
+        return LIQUIDATION_THRESHOLD;
+    }
+
+    function getMinimumHealthFactor() external pure returns (uint256) {
+        return MINIMUM_HEALTH_FACTOR;
+    }
+
+    function getDSCAddress() external view returns (address) {
+        return address(s_dscToken);
+    }
+
+    function getLiquidationPrecision() external pure returns (uint256) {
+        return LIQUIDATION_PRECISION;
+    }
+
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_tokenAddresses;
+    }
+
+    function getPriceFeeds(address tokenCollateral) external view returns (address) {
+        return s_priceFeeds[tokenCollateral];
     }
 }

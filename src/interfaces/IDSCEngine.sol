@@ -16,5 +16,5 @@ interface IDSCEngine {
 
     function liquidate(address _collateral, address _user, uint256 _debtToCover) external;
 
-    function getHealthFactor() external view;
+    function getHealthFactor(address _user) external view;
 }
