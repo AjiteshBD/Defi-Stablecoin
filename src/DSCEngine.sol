@@ -244,9 +244,9 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function _redeemCollateral(address _collateral, address _toUser, address _fromUser, uint256 _amount) internal {
-        s_collateralDeposited[_toUser][_collateral] -= _amount;
+        s_collateralDeposited[_fromUser][_collateral] -= _amount;
         emit CollateralRedeemed(_toUser, _fromUser, _collateral, _amount);
-        bool success = IERC20(_collateral).transfer(_fromUser, _amount);
+        bool success = IERC20(_collateral).transfer(_toUser, _amount);
         if (!success) {
             revert DSCEngine__TransferFailed();
         }
@@ -296,7 +296,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
      */
     function _revertIfHealthFactorIsBroken(address user) internal view {
         uint256 _userHealthFactor = _healthFactor(user);
-        if (_userHealthFactor > MINIMUM_HEALTH_FACTOR) {
+        if (_userHealthFactor < MINIMUM_HEALTH_FACTOR) {
             revert DSCEngine__BreaksHealthFactor(_userHealthFactor);
         }
     }
