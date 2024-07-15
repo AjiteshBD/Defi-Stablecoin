@@ -29,6 +29,7 @@ import {DecentStableCoin} from "./DecentStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "./libraries/OracleLib.sol";
 
 /**
  * @title DSCEngine
@@ -58,6 +59,11 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
     error DSCEngine__MintFailed();
     error DSCEngine__UserHealthFactorIsNotBroken();
     error DSCEngine__HEALTH_FACTOR_NOT_IMPROVED();
+
+    /*//////////////////////////////////////////////////////////////
+                                 TYPE
+    //////////////////////////////////////////////////////////////*/
+    using OracleLib for AggregatorV3Interface;
 
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -326,7 +332,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
         // $/ETH = ETH??
         // ex: $2000/ETH = amount/$1000 = 1 eth =2000 we have 1000 so we have 0.5 eth
         AggregatorV3Interface aggregator = AggregatorV3Interface(s_priceFeeds[_token]);
-        (, int256 price,,,) = aggregator.latestRoundData();
+        (, int256 price,,,) = aggregator.stalePriceCheckLatestRoundData();
         return (_amountUSDInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
 
@@ -343,7 +349,7 @@ contract DSCEngine is IDSCEngine, ReentrancyGuard {
 
     function getUSDValue(address _token, uint256 _amount) public view returns (uint256) {
         AggregatorV3Interface aggregator = AggregatorV3Interface(s_priceFeeds[_token]);
-        (, int256 price,,,) = aggregator.latestRoundData();
+        (, int256 price,,,) = aggregator.stalePriceCheckLatestRoundData();
         // convert int price to uint then multiply by amount additional precision to same decimals as DSC
         // then divide by precision to get USD value
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * _amount) / PRECISION;

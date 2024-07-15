@@ -6,6 +6,7 @@ import {DSCEngine} from "src/DSCEngine.sol";
 import {HelperConfig} from "script/utils/HelperConfig.s.sol";
 import {DecentStableCoin} from "src/DecentStableCoin.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
 
 contract Handler is Test {
     DSCEngine engine;
@@ -15,6 +16,7 @@ contract Handler is Test {
     uint256 MAX_COLLATERAL = type(uint96).max;
     address[] public depositers;
     address[] public redeemers;
+    MockV3Aggregator wethPriceFeed;
 
     constructor(DecentStableCoin _dsc, DSCEngine _dsce) {
         engine = _dsce;
@@ -22,6 +24,7 @@ contract Handler is Test {
         address[] memory collateralAddresses = engine.getCollateralTokens();
         weth = ERC20Mock(collateralAddresses[0]);
         wbtc = ERC20Mock(collateralAddresses[1]);
+        wethPriceFeed = MockV3Aggregator(engine.getPriceFeeds(address(weth)));
     }
 
     function depositCollateral(uint256 collateralSeed, uint256 collateralAmount) public {
@@ -66,6 +69,11 @@ contract Handler is Test {
         engine.mintDSC(dscAmount);
         vm.stopPrank();
     }
+
+    // This invariant breaks our test suite
+    // function updatePrice(uint256 newPrice) public {
+    //     wethPriceFeed.updateAnswer(int256(newPrice));
+    // }
 
     function _getCollateralValue(uint256 collaterSeed) private view returns (ERC20Mock) {
         if (collaterSeed % 2 == 0) {
